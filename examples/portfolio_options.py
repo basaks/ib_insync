@@ -1,5 +1,6 @@
 from ib_insync import *
 import time
+from datetime import datetime
 import pandas as pd
 
 
@@ -56,23 +57,31 @@ def main():
             """
             ticker_dataframes = {}
             for ticker, options in options_by_ticker.items():
-                data = {'Strike Price': [], 'Position Size': [], 'Option Type': [],
-                'lastTradeDateOrContractMonth': [],
-                                'Average Price': [],
-                                'marketPrice': [],
-                                'marketValue': [],
-                                'unrealizedPNL': [],
+                data = {
+                    'Strike Price': [],
+                    'Position Size': [],
+                    'Option Type': [],
+                    'Expiry': [],
+                    'Average Price': [],
+                    'marketPrice': [],
+                    'marketValue': [],
+                    'unrealizedPNL': [],
                 }
                 for option_position in options:
                     data['Strike Price'].append(option_position.contract.strike)
                     data['Position Size'].append(option_position.position)
                     data['Option Type'].append(option_position.contract.right)
-                    data['lastTradeDateOrContractMonth'].append(option_position.contract.lastTradeDateOrContractMonth)
+                    data['Expiry'].append(
+                        datetime.strptime(option_position.contract.lastTradeDateOrContractMonth, '%Y%m%d').date().isoformat()
+                    )
                     data['Average Price'].append(option_position.averageCost)
                     data['marketPrice'].append(option_position.marketPrice)
                     data['marketValue'].append(option_position.marketValue)
                     data['unrealizedPNL'].append(option_position.unrealizedPNL)
                 ticker_dataframes[ticker] = pd.DataFrame(data)
+            # also availble for quick lookup
+            for ticker, options in options_by_ticker.items():
+                ticker_dataframes[ticker.lower()] = ticker_dataframes[ticker]
             return ticker_dataframes
 
         # Keep the script running to receive ticks (you might want to set a timeout or other stopping condition)
