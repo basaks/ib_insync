@@ -58,23 +58,23 @@ def main():
             ticker_dataframes = {}
             for ticker, options in options_by_ticker.items():
                 data = {
-                    'Strike Price': [],
-                    'Position Size': [],
-                    'Option Type': [],
+                    'Strike': [],
+                    'Position': [],
+                    'C/P': [],
                     'Expiry': [],
-                    'Average Price': [],
+                    'averageCost': [],
                     'marketPrice': [],
                     'marketValue': [],
                     'unrealizedPNL': [],
                 }
                 for option_position in options:
-                    data['Strike Price'].append(option_position.contract.strike)
-                    data['Position Size'].append(option_position.position)
-                    data['Option Type'].append(option_position.contract.right)
+                    data['Strike'].append(option_position.contract.strike)
+                    data['Position'].append(option_position.position)
+                    data['C/P'].append(option_position.contract.right)
                     data['Expiry'].append(
                         datetime.strptime(option_position.contract.lastTradeDateOrContractMonth, '%Y%m%d').date().isoformat()
                     )
-                    data['Average Price'].append(option_position.averageCost)
+                    data['averageCost'].append(option_position.averageCost)
                     data['marketPrice'].append(option_position.marketPrice)
                     data['marketValue'].append(option_position.marketValue)
                     data['unrealizedPNL'].append(option_position.unrealizedPNL)
@@ -85,7 +85,7 @@ def main():
             return ticker_dataframes
 
         # Keep the script running to receive ticks (you might want to set a timeout or other stopping condition)
-        time.sleep(5)
+        time.sleep(2)
         # print(ticker)
         # print(organize_options_by_ticker(portfolio))
         return create_options_dataframe(organize_options_by_ticker(portfolio))
@@ -99,4 +99,9 @@ def main():
 if __name__ == '__main__':
     options_by_ticker = main()
     import IPython; IPython.embed(); import sys; sys.exit()
+    for ticker, tdf in options_by_ticker.items():
+        if ticker.islower() and tdf[tdf['Expiry']=='2025-07-03'].shape[0]:
+            print(f"===================={ticker}======================")
+            print(ticker, tdf[tdf['Expiry']=='2025-07-03'])
+
 
