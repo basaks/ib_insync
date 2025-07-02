@@ -15,6 +15,7 @@ def main():
         ib.reqMarketDataType(2)  # this is key for after hours options greeks download
 
         # ticker = ib.reqMktData(contract, '', True, False)  # useGreeks=True
+        print(ib.reqMktData(contract, '', True, False)) # useGreeks=True)
         ticker = ib.reqTickers(contract)
 
         # Keep the script running to receive ticks (you might want to set a timeout or other stopping condition)
