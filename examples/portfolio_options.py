@@ -1,6 +1,7 @@
 from ib_insync import *
 import time
 from datetime import datetime
+import numpy as np
 import pandas as pd
 from ib_insync.my_utils import get_last_traded_price_sync
 
@@ -56,7 +57,7 @@ def create_options_dataframe(options_by_ticker):
             # last_traded_price_of_underlying = get_last_traded_price_sync(ib, stock_contract)
             # import IPython; IPython.embed(); import sys; sys.exit()
             data['Strike'].append(contract.strike)
-            data['Position'].append(option_position.position)
+            data['Position'].append(np.int16(option_position.position))
             data['C/P'].append(contract.right)
             data['Expiry'].append(
                 datetime.strptime(contract.lastTradeDateOrContractMonth, '%Y%m%d').date().isoformat()
@@ -66,10 +67,11 @@ def create_options_dataframe(options_by_ticker):
             data['marketValue'].append(option_position.marketValue)
             data['unrealizedPNL'].append(option_position.unrealizedPNL)
         ticker_dataframes[ticker] = pd.DataFrame(data)
-    # also availble for quick lookup
-    for ticker, options in options_by_ticker.items():
-        ticker_dataframes[ticker.lower()] = ticker_dataframes[ticker]
+        # also availble for quick lookup
+        ticker_dataframes[ticker.lower()] = pd.DataFrame(data)
+
     return ticker_dataframes
+
 
 def main():
     ib = IB()
@@ -93,9 +95,10 @@ def main():
 if __name__ == '__main__':
     options_by_ticker = main()
     for ticker, tdf in options_by_ticker.items():
-        if (not ticker.islower()) and (tdf[tdf['Expiry']=='2025-07-03'].shape[0]):
+        if (not ticker.islower()) and (tdf[tdf['Expiry'] == '2025-07-11'].shape[0]):
             print(f"===================={ticker}======================")
-            print(ticker, tdf[tdf['Expiry']=='2025-07-03'])
-            print(f"{ticker} latest profit: ", tdf[tdf['Expiry']=='2025-07-03'].unrealizedPNL.sum())
+            print(ticker, tdf[tdf['Expiry'] == '2025-07-11'])
+            print(f"{ticker} latest profit: ", tdf[tdf['Expiry'] == '2025-07-03'].unrealizedPNL.sum())
+            print(f"net calls {ticker}: {tdf[tdf['C/P'] == 'C'].Position.sum()}, "
+                  f"net puts {ticker}: {tdf[tdf['C/P'] == 'P'].Position.sum()}")
     import IPython; IPython.embed(); import sys; sys.exit()
-
