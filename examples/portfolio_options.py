@@ -60,15 +60,19 @@ def create_options_dataframe(options_by_ticker):
             data['Position'].append(np.int16(option_position.position))
             data['C/P'].append(contract.right)
             data['Expiry'].append(
-                datetime.strptime(contract.lastTradeDateOrContractMonth, '%Y%m%d').date().isoformat()
+                # datetime.strptime(contract.lastTradeDateOrContractMonth, '%Y%m%d').date().isoformat()
+                datetime.strptime(contract.lastTradeDateOrContractMonth, '%Y%m%d').date()
             )
             data['averageCost'].append(option_position.averageCost)
             data['marketPrice'].append(option_position.marketPrice)
             data['marketValue'].append(option_position.marketValue)
             data['unrealizedPNL'].append(option_position.unrealizedPNL)
-        ticker_dataframes[ticker] = pd.DataFrame(data)
+        data = pd.DataFrame(data)
+        data.index = pd.DatetimeIndex(data['Expiry'])
+        # data.drop(['Expiry'], axis=1, inplace=True)
+        ticker_dataframes[ticker] = data
         # also availble for quick lookup
-        ticker_dataframes[ticker.lower()] = pd.DataFrame(data)
+        ticker_dataframes[ticker.lower()] = data
 
     return ticker_dataframes
 
@@ -81,7 +85,7 @@ def main():
 
         # Ensure the contract details are fetched
         portfolio = ib.portfolio()
-        time.sleep(2)
+        time.sleep(5)
         # print(ticker)
         # print(organize_options_by_ticker(portfolio))
         return create_options_dataframe(organize_options_by_ticker(portfolio))
@@ -97,8 +101,9 @@ if __name__ == '__main__':
     for ticker, tdf in options_by_ticker.items():
         if (not ticker.islower()) and (tdf[tdf['Expiry'] == '2025-07-11'].shape[0]):
             print(f"===================={ticker}======================")
-            print(ticker, tdf[tdf['Expiry'] == '2025-07-11'])
-            print(f"{ticker} latest profit: ", tdf[tdf['Expiry'] == '2025-07-03'].unrealizedPNL.sum())
+            print(ticker, tdf.loc['2025-07-18'])
+            print(f"{ticker} latest profit: ", tdf.loc['2025-07-18'].unrealizedPNL.sum())
+        if (not ticker.islower()):
             print(f"net calls {ticker}: {tdf[tdf['C/P'] == 'C'].Position.sum()}, "
                   f"net puts {ticker}: {tdf[tdf['C/P'] == 'P'].Position.sum()}")
     import IPython; IPython.embed(); import sys; sys.exit()
