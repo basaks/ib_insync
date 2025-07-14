@@ -46,6 +46,7 @@ def create_options_dataframe(options_by_ticker):
             'Position': [],
             'C/P': [],
             'Expiry': [],
+            'Expiry_date': [],
             'averageCost': [],
             'marketPrice': [],
             'marketValue': [],
@@ -60,7 +61,9 @@ def create_options_dataframe(options_by_ticker):
             data['Position'].append(np.int16(option_position.position))
             data['C/P'].append(contract.right)
             data['Expiry'].append(
-                # datetime.strptime(contract.lastTradeDateOrContractMonth, '%Y%m%d').date().isoformat()
+                datetime.strptime(contract.lastTradeDateOrContractMonth, '%Y%m%d').date().isoformat()
+            )
+            data['Expiry_date'].append(
                 datetime.strptime(contract.lastTradeDateOrContractMonth, '%Y%m%d').date()
             )
             data['averageCost'].append(option_position.averageCost)
@@ -68,8 +71,8 @@ def create_options_dataframe(options_by_ticker):
             data['marketValue'].append(option_position.marketValue)
             data['unrealizedPNL'].append(option_position.unrealizedPNL)
         data = pd.DataFrame(data)
-        data.index = pd.DatetimeIndex(data['Expiry'])
-        # data.drop(['Expiry'], axis=1, inplace=True)
+        data.index = pd.DatetimeIndex(data['Expiry_date'])
+        data.drop(['Expiry_date'], axis=1, inplace=True)
         ticker_dataframes[ticker] = data
         # also availble for quick lookup
         ticker_dataframes[ticker.lower()] = data
@@ -82,12 +85,10 @@ def main():
     try:
         ib.connect('127.0.0.1', 7496, clientId=10, readonly=True)
         # ib.reqMarketDataType(2)  # this is key for after hours options greeks download
-
+        # ib.reqAccountUpdates()
         # Ensure the contract details are fetched
         portfolio = ib.portfolio()
         time.sleep(5)
-        # print(ticker)
-        # print(organize_options_by_ticker(portfolio))
         return create_options_dataframe(organize_options_by_ticker(portfolio))
 
     except Exception as e:
@@ -98,11 +99,12 @@ def main():
 
 if __name__ == '__main__':
     options_by_ticker = main()
+    closest_expiry = "2025-07-18"
     for ticker, tdf in options_by_ticker.items():
-        if (not ticker.islower()) and (tdf[tdf['Expiry'] == '2025-07-11'].shape[0]):
+        if (not ticker.islower()) and (tdf[tdf['Expiry'] == closest_expiry].shape[0]):
             print(f"===================={ticker}======================")
-            print(ticker, tdf.loc['2025-07-18'])
-            print(f"{ticker} latest profit: ", tdf.loc['2025-07-18'].unrealizedPNL.sum())
+            print(ticker, tdf.loc[closest_expiry])
+            print(f"{ticker} latest profit: ", tdf.loc[closest_expiry].unrealizedPNL.sum())
         if (not ticker.islower()):
             print(f"net calls {ticker}: {tdf[tdf['C/P'] == 'C'].Position.sum()}, "
                   f"net puts {ticker}: {tdf[tdf['C/P'] == 'P'].Position.sum()}")
