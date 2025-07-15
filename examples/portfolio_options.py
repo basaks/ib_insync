@@ -6,6 +6,25 @@ import pandas as pd
 from ib_insync.my_utils import get_last_traded_price_sync
 
 
+def net_options(ticker, call_or_put, expiry_date=None, with_display=False):
+    t = options_by_ticker[ticker]
+    df = t.loc[expiry_date, :] if expiry_date is not None else t
+
+    option_type_string = f"{ticker} extra {call_or_put}s: "
+    if with_display:
+        print(df)
+    print(option_type_string, df[df['C/P'] == call_or_put].Position.sum())
+    return
+
+
+def net_calls(ticker, expiry_date=None, display=True):
+    return net_options(ticker=ticker, call_or_put='C', expiry_date=expiry_date, with_display=display)
+
+
+def net_puts(ticker, expiry_date=None, display=True):
+    return net_options(ticker=ticker, call_or_put='P', expiry_date=expiry_date, with_display=display)
+
+
 def organize_options_by_ticker(portfolio):
     """
     Organizes option contracts from a portfolio by their underlying ticker.
@@ -101,11 +120,11 @@ if __name__ == '__main__':
     options_by_ticker = main()
     closest_expiry = "2025-07-18"
     for ticker, tdf in options_by_ticker.items():
-        if (not ticker.islower()) and (tdf[tdf['Expiry'] == closest_expiry].shape[0]):
+        if not ticker.islower():
             print(f"===================={ticker}======================")
-            print(ticker, tdf.loc[closest_expiry])
-            print(f"{ticker} latest profit: ", tdf.loc[closest_expiry].unrealizedPNL.sum())
-        if (not ticker.islower()):
-            print(f"net calls {ticker}: {tdf[tdf['C/P'] == 'C'].Position.sum()}, "
-                  f"net puts {ticker}: {tdf[tdf['C/P'] == 'P'].Position.sum()}")
+            if tdf[tdf['Expiry'] == closest_expiry].shape[0]:
+                print(ticker, tdf.loc[closest_expiry])
+                print(f"{ticker} latest profit: ", tdf.loc[closest_expiry].unrealizedPNL.sum())
+            net_calls(ticker=ticker, expiry_date=None, display=False)
+            net_puts(ticker=ticker, expiry_date=None, display=False)
     import IPython; IPython.embed(); import sys; sys.exit()
