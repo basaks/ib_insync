@@ -7,19 +7,20 @@ from ib_insync.my_utils import get_last_traded_price_sync
 
 
 def net_options(stock, expiry_date=None, with_display=True):
+    stock = stock.upper()
     t = options_by_ticker[stock]
     df = t.loc[expiry_date, :] if expiry_date is not None else t
 
     option_type_string_calls = f"{stock} extra Calls: "
     option_type_string_puts = f"{stock} extra Puts: "
     if with_display:
-        print(df)
+        print(df.set_index('Expiry').to_markdown(index=True))
     print(option_type_string_calls, df[df['C/P'] == 'C'].Position.sum())
     print(option_type_string_puts, df[df['C/P'] == 'P'].Position.sum())
     return
 
 
-def organize_options_by_ticker(portfolio):
+def organize_contract_type_by_ticker(portfolio, contract_type='OPT'):
     """
     Organizes option contracts from a portfolio by their underlying ticker.
 
@@ -30,22 +31,58 @@ def organize_options_by_ticker(portfolio):
         dict: A dictionary where keys are underlying ticker symbols (str) and
               values are lists of Position objects for options on that ticker.
     """
-    options_by_ticker = {}
+    contracts_by_ticker = {}
     for pos in portfolio:
-        if pos.contract.secType == "OPT":
+        if pos.contract.secType == contract_type:
             ticker = pos.contract.symbol
-            if ticker not in options_by_ticker:
-                options_by_ticker[ticker] = []
-            options_by_ticker[ticker].append(pos)
-    return options_by_ticker
+            if ticker not in contracts_by_ticker:
+                contracts_by_ticker[ticker] = []
+            contracts_by_ticker[ticker].append(pos)
+    return contracts_by_ticker
 
 
-def create_options_dataframe(options_by_ticker):
+# def organize_stock_type_by_ticker(portfolio):
+#     return organize_contract_type_by_ticker(portfolio, contract_type='STK')
+
+
+def create_stocks_dataframe(stocks_by_tickers):
+    """
+    Converts the dictionary of stocks by ticker to a dictionary of pandas DataFrames.
+
+    Args:
+        stocks_by_tickers (dict): A dictionary where keys are underlying ticker symbols
+                                  and values are lists of Position objects for stocks.
+
+    Returns:
+        dict: A dictionary where keys are underlying ticker symbols (str) and
+              values are pandas DataFrames with "Strike Price" and "Position Size".
+    """
+    ticker_dataframes = {}
+    for ticker, stocks in stocks_by_tickers.items():
+        data = {}
+        for stk_position in stocks:
+            contract = stk_position.contract
+            # stock_contract = Stock(contract.tradingClass, 'SMART', contract.currency)
+            # last_traded_price_of_underlying = get_last_traded_price_sync(ib, stock_contract)
+            data['Position'] = np.int32(stk_position.position)
+            data['averageCost'] = stk_position.averageCost
+            data['marketPrice'] = stk_position.marketPrice
+            data['marketValue'] = stk_position.marketValue
+            data['unrealizedPNL'] = stk_position.unrealizedPNL
+        # data = pd.DataFrame(data)
+        ticker_dataframes[ticker] = data
+        # also availble for quick lookup
+        # ticker_dataframes[ticker.lower()] = data
+
+    return pd.DataFrame(ticker_dataframes).transpose()
+
+
+def create_options_dataframe(options_by_the_tickers):
     """
     Converts the dictionary of options by ticker to a dictionary of pandas DataFrames.
 
     Args:
-        options_by_ticker (dict): A dictionary where keys are underlying ticker symbols
+        options_by_the_tickers (dict): A dictionary where keys are underlying ticker symbols
                                   and values are lists of Position objects for options.
 
     Returns:
@@ -53,7 +90,7 @@ def create_options_dataframe(options_by_ticker):
               values are pandas DataFrames with "Strike Price" and "Position Size".
     """
     ticker_dataframes = {}
-    for ticker, options in options_by_ticker.items():
+    for ticker, options in options_by_the_tickers.items():
         data = {
             'Strike': [],
             'Position': [],
@@ -88,7 +125,7 @@ def create_options_dataframe(options_by_ticker):
         data.drop(['Expiry_date'], axis=1, inplace=True)
         ticker_dataframes[ticker] = data
         # also availble for quick lookup
-        ticker_dataframes[ticker.lower()] = data
+        # ticker_dataframes[ticker.lower()] = data
 
     return ticker_dataframes
 
@@ -102,7 +139,7 @@ def main():
         # Ensure the contract details are fetched
         portfolio = ib.portfolio()
         time.sleep(5)
-        return create_options_dataframe(organize_options_by_ticker(portfolio))
+        return portfolio, create_options_dataframe(organize_contract_type_by_ticker(portfolio))
 
     except Exception as e:
         print(f"Error: {e}")
@@ -111,7 +148,7 @@ def main():
 
 
 if __name__ == '__main__':
-    options_by_ticker = main()
+    portfolio, options_by_ticker = main()
     closest_expiry = "2025-07-18"
     for ticker, tdf in options_by_ticker.items():
         if not ticker.islower():
@@ -121,4 +158,6 @@ if __name__ == '__main__':
                 print(f"{ticker} latest profit: ", tdf.loc[closest_expiry].unrealizedPNL.sum())
             net_options(stock=ticker, expiry_date=None, with_display=False)
             # net_puts(ticker=ticker, expiry_date=None, display=False)
+
+    stocks = create_stocks_dataframe(organize_contract_type_by_ticker(portfolio, contract_type='STK'))
     import IPython; IPython.embed(); import sys; sys.exit()
