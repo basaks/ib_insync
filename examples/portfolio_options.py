@@ -6,23 +6,17 @@ import pandas as pd
 from ib_insync.my_utils import get_last_traded_price_sync
 
 
-def net_options(ticker, call_or_put, expiry_date=None, with_display=False):
-    t = options_by_ticker[ticker]
+def net_options(stock, expiry_date=None, with_display=True):
+    t = options_by_ticker[stock]
     df = t.loc[expiry_date, :] if expiry_date is not None else t
 
-    option_type_string = f"{ticker} extra {call_or_put}s: "
+    option_type_string_calls = f"{stock} extra Calls: "
+    option_type_string_puts = f"{stock} extra Puts: "
     if with_display:
         print(df)
-    print(option_type_string, df[df['C/P'] == call_or_put].Position.sum())
+    print(option_type_string_calls, df[df['C/P'] == 'C'].Position.sum())
+    print(option_type_string_puts, df[df['C/P'] == 'P'].Position.sum())
     return
-
-
-def net_calls(ticker, expiry_date=None, display=True):
-    return net_options(ticker=ticker, call_or_put='C', expiry_date=expiry_date, with_display=display)
-
-
-def net_puts(ticker, expiry_date=None, display=True):
-    return net_options(ticker=ticker, call_or_put='P', expiry_date=expiry_date, with_display=display)
 
 
 def organize_options_by_ticker(portfolio):
@@ -125,6 +119,6 @@ if __name__ == '__main__':
             if tdf[tdf['Expiry'] == closest_expiry].shape[0]:
                 print(ticker, tdf.loc[closest_expiry])
                 print(f"{ticker} latest profit: ", tdf.loc[closest_expiry].unrealizedPNL.sum())
-            net_calls(ticker=ticker, expiry_date=None, display=False)
-            net_puts(ticker=ticker, expiry_date=None, display=False)
+            net_options(stock=ticker, expiry_date=None, with_display=False)
+            # net_puts(ticker=ticker, expiry_date=None, display=False)
     import IPython; IPython.embed(); import sys; sys.exit()
