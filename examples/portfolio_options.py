@@ -3,7 +3,30 @@ import time
 from datetime import datetime
 import numpy as np
 import pandas as pd
+from tabulate import tabulate
 from ib_insync.my_utils import get_last_traded_price_sync
+
+
+def gridded_print(df_with_repeated_indices):
+    table_data = []
+    previous_index = None
+    first_index = True
+    for idx, row in df_with_repeated_indices.iterrows():
+        current_index = idx
+        index_value = ""
+        if current_index != previous_index:
+            if not first_index:
+                # Add a horizontal line before the new index value
+                separator = ["-" * 10] + ["-" * 8] * len(df_with_repeated_indices.columns)  # Adjust '-' count as needed
+                table_data.append(separator)
+            index_value = current_index
+            previous_index = current_index
+            first_index = False
+        row_values = row.tolist()
+        table_data.append([index_value] + row_values)
+
+    headers = ["Expiry"] + df_with_repeated_indices.columns.tolist()
+    print(tabulate(table_data, headers=headers, tablefmt='outline'))
 
 
 def net_options(stock, expiry_date=None, with_display=True):
@@ -14,7 +37,8 @@ def net_options(stock, expiry_date=None, with_display=True):
     option_type_string_calls = f"{stock} extra Calls: "
     option_type_string_puts = f"{stock} extra Puts: "
     if with_display:
-        print(df.set_index('Expiry').to_markdown(index=True))
+        # print(df.set_index('Expiry').to_markdown(index=True))
+        gridded_print(df.set_index('Expiry'))
     print(option_type_string_calls, df[df['C/P'] == 'C'].Position.sum())
     print(option_type_string_puts, df[df['C/P'] == 'P'].Position.sum())
     return
@@ -39,10 +63,6 @@ def organize_contract_type_by_ticker(portfolio, contract_type='OPT'):
                 contracts_by_ticker[ticker] = []
             contracts_by_ticker[ticker].append(pos)
     return contracts_by_ticker
-
-
-# def organize_stock_type_by_ticker(portfolio):
-#     return organize_contract_type_by_ticker(portfolio, contract_type='STK')
 
 
 def create_stocks_dataframe(stocks_by_tickers):
@@ -151,13 +171,11 @@ if __name__ == '__main__':
     portfolio, options_by_ticker = main()
     closest_expiry = "2025-07-18"
     for ticker, tdf in options_by_ticker.items():
-        if not ticker.islower():
-            print(f"===================={ticker}======================")
-            if tdf[tdf['Expiry'] == closest_expiry].shape[0]:
-                print(ticker, tdf.loc[closest_expiry])
-                print(f"{ticker} latest profit: ", tdf.loc[closest_expiry].unrealizedPNL.sum())
-            net_options(stock=ticker, expiry_date=None, with_display=False)
-            # net_puts(ticker=ticker, expiry_date=None, display=False)
+        print(f"===================={ticker}======================")
+        if tdf[tdf['Expiry'] == closest_expiry].shape[0]:
+            print(ticker, tdf.loc[closest_expiry])
+            print(f"{ticker} latest profit: ", tdf.loc[closest_expiry].unrealizedPNL.sum())
+        net_options(stock=ticker, expiry_date=None, with_display=False)
 
     stocks = create_stocks_dataframe(organize_contract_type_by_ticker(portfolio, contract_type='STK'))
     import IPython; IPython.embed(); import sys; sys.exit()
