@@ -32,7 +32,7 @@ def markdown_printer_with_unique_index(df_with_repeated_indices, table_format):
     print(markdown_output)
 
 
-def net_options(stock, expiry_date=None, with_display=True, table_format='pipe'):
+def net_options(stock, expiry_date=None, with_display=True, table_format='pipe', call_or_put=None):
     stock = stock.upper()
     t = options_by_ticker[stock]
     df = t.loc[expiry_date, :] if expiry_date is not None else t
@@ -41,7 +41,8 @@ def net_options(stock, expiry_date=None, with_display=True, table_format='pipe')
     option_type_string_puts = f"{stock} extra Puts: "
     if with_display:
         # print(df.set_index('Expiry').to_markdown(index=True))
-        markdown_printer_with_unique_index(df.set_index('Expiry'), table_format=table_format)
+        df_call_or_put = df[df['C/P'] == call_or_put] if call_or_put is not None else df
+        markdown_printer_with_unique_index(df_call_or_put.set_index('Expiry'), table_format=table_format)
     print(option_type_string_calls, df[df['C/P'] == 'C'].Position.sum())
     print(option_type_string_puts, df[df['C/P'] == 'P'].Position.sum())
     return
