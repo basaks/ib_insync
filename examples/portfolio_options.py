@@ -49,9 +49,16 @@ def net_options(stock, expiry_date=None, with_display=True, table_format='pipe',
 
 
 def unrealized_pnl(ticker, expiry=None):
-    print(f"Unrealised pnl for {ticker.upper()}")
-    return options_by_ticker[ticker.upper()].loc[:, :].unrealizedPNL.sum() if expiry is None else \
-        options_by_ticker[ticker.upper()].loc[expiry, :].unrealizedPNL.sum()
+    additional_str = f" for date {expiry}: " if expiry else ": "
+    print(
+        f"Unrealised pnl for {ticker.upper()}" + additional_str +
+        str(
+            round(
+                options_by_ticker[ticker.upper()].loc[:, :].unrealizedPNL.sum() if expiry is None
+                else options_by_ticker[ticker.upper()].loc[expiry, :].unrealizedPNL.sum(), 2
+            )
+        )
+    )
 
 
 def organize_contract_type_by_ticker(portfolio, contract_type='OPT'):
