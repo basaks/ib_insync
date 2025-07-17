@@ -7,7 +7,7 @@ from tabulate import tabulate
 from ib_insync.my_utils import get_last_traded_price_sync
 
 
-def markdown_printer_with_unique_index(df_with_repeated_indices):
+def markdown_printer_with_unique_index(df_with_repeated_indices, table_format):
     markdown_data = []
     previous_index = None
     first_index = True
@@ -27,12 +27,12 @@ def markdown_printer_with_unique_index(df_with_repeated_indices):
     markdown_df = pd.DataFrame(markdown_data, columns=["Expiry"] + df_with_repeated_indices.columns.tolist())
 
     # Use to_markdown with index=False to avoid default DataFrame index
-    markdown_output = markdown_df.to_markdown(index=False)
+    markdown_output = markdown_df.to_markdown(index=False, tablefmt=table_format)
 
     print(markdown_output)
 
 
-def net_options(stock, expiry_date=None, with_display=True):
+def net_options(stock, expiry_date=None, with_display=True, table_format='pipe'):
     stock = stock.upper()
     t = options_by_ticker[stock]
     df = t.loc[expiry_date, :] if expiry_date is not None else t
@@ -41,7 +41,7 @@ def net_options(stock, expiry_date=None, with_display=True):
     option_type_string_puts = f"{stock} extra Puts: "
     if with_display:
         # print(df.set_index('Expiry').to_markdown(index=True))
-        markdown_printer_with_unique_index(df.set_index('Expiry'))
+        markdown_printer_with_unique_index(df.set_index('Expiry'), table_format=table_format)
     print(option_type_string_calls, df[df['C/P'] == 'C'].Position.sum())
     print(option_type_string_puts, df[df['C/P'] == 'P'].Position.sum())
     return
