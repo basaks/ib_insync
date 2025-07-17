@@ -7,8 +7,8 @@ from tabulate import tabulate
 from ib_insync.my_utils import get_last_traded_price_sync
 
 
-def gridded_print(df_with_repeated_indices):
-    table_data = []
+def markdown_printer_with_unique_index(df_with_repeated_indices):
+    markdown_data = []
     previous_index = None
     first_index = True
     for idx, row in df_with_repeated_indices.iterrows():
@@ -16,17 +16,20 @@ def gridded_print(df_with_repeated_indices):
         index_value = ""
         if current_index != previous_index:
             if not first_index:
-                # Add a horizontal line before the new index value
-                separator = ["-" * 10] + ["-" * 8] * len(df_with_repeated_indices.columns)  # Adjust '-' count as needed
-                table_data.append(separator)
+                markdown_data.append(["-"*10] + ["-"*10] * len(df_with_repeated_indices.columns))
             index_value = current_index
             previous_index = current_index
             first_index = False
         row_values = row.tolist()
-        table_data.append([index_value] + row_values)
+        markdown_data.append([index_value] + row_values)
 
-    headers = ["Expiry"] + df_with_repeated_indices.columns.tolist()
-    print(tabulate(table_data, headers=headers, tablefmt='outline'))
+    # Create a DataFrame from the processed data for cleaner markdown output
+    markdown_df = pd.DataFrame(markdown_data, columns=["Expiry"] + df_with_repeated_indices.columns.tolist())
+
+    # Use to_markdown with index=False to avoid default DataFrame index
+    markdown_output = markdown_df.to_markdown(index=False)
+
+    print(markdown_output)
 
 
 def net_options(stock, expiry_date=None, with_display=True):
@@ -38,7 +41,7 @@ def net_options(stock, expiry_date=None, with_display=True):
     option_type_string_puts = f"{stock} extra Puts: "
     if with_display:
         # print(df.set_index('Expiry').to_markdown(index=True))
-        gridded_print(df.set_index('Expiry'))
+        markdown_printer_with_unique_index(df.set_index('Expiry'))
     print(option_type_string_calls, df[df['C/P'] == 'C'].Position.sum())
     print(option_type_string_puts, df[df['C/P'] == 'P'].Position.sum())
     return
