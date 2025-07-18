@@ -102,10 +102,10 @@ def create_stocks_dataframe(stocks_by_tickers):
             # stock_contract = Stock(contract.tradingClass, 'SMART', contract.currency)
             # last_traded_price_of_underlying = get_last_traded_price_sync(ib, stock_contract)
             data['Position'] = np.int32(stk_position.position)
-            data['averageCost'] = stk_position.averageCost
-            data['marketPrice'] = stk_position.marketPrice
-            data['marketValue'] = stk_position.marketValue
-            data['unrealizedPNL'] = stk_position.unrealizedPNL
+            data['averageCost'] = round(stk_position.averageCost, 2)
+            data['marketPrice'] = round(stk_position.marketPrice, 2)
+            data['marketValue'] = round(stk_position.marketValue, 2)
+            data['unrealizedPNL'] = round(stk_position.unrealizedPNL, 2)
         # data = pd.DataFrame(data)
         ticker_dataframes[ticker] = data
         # also availble for quick lookup
@@ -153,10 +153,10 @@ def create_options_dataframe(options_by_the_tickers):
             data['Expiry_date'].append(
                 datetime.strptime(contract.lastTradeDateOrContractMonth, '%Y%m%d').date()
             )
-            data['averageCost'].append(option_position.averageCost)
-            data['marketPrice'].append(option_position.marketPrice)
-            data['marketValue'].append(option_position.marketValue)
-            data['unrealizedPNL'].append(option_position.unrealizedPNL)
+            data['averageCost'].append(round(option_position.averageCost, 2))
+            data['marketPrice'].append(round(option_position.marketPrice, 2))
+            data['marketValue'].append(round(option_position.marketValue, 2))
+            data['unrealizedPNL'].append(round(option_position.unrealizedPNL, 2))
         data = pd.DataFrame(data)
         data.index = pd.DatetimeIndex(data['Expiry_date'])
         data.drop(['Expiry_date'], axis=1, inplace=True)
